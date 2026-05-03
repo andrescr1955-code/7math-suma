@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>7Math - Suma</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --primary: #1f6fe5;
+            --success: #28a745;
+            --danger: #dc3545;
+            --bg: #f0f4f8;
+            --highlight: #fff9c4;
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 20px; }
+
+        .card { background: white; border-radius: 20px; padding: 25px; max-width: 450px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; }
+
+        h2 { color: var(--primary); margin-bottom: 5px; }
+        #instruccion-nivel { font-size: 16px; color: #666; font-style: italic; margin-bottom: 15px; height: 20px; }
+
+        .input-manual { font-size: 24px; width: 100px; padding: 10px; text-align: center; border: 3px solid #ddd; border-radius: 12px; margin: 5px; background: #fff; cursor: pointer; }
+
+        .input-manual.activo { border-color: var(--primary); background: #eef6ff; box-shadow: 0 0 10px rgba(31, 111, 229, 0.3); }
+
+        .operacion-container { display: inline-block; margin: 20px 0; font-family: 'Courier New', monospace; }
+
+        .fila { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 5px; }
+
+        .celda { width: 45px; height: 45px; font-size: 32px; display: flex; align-items: center; justify-content: center; }
+
+        .acarreo-fila .celda {
+            height: 35px; width: 35px; font-size: 18px; color: var(--primary);
+            border: 2px dashed #ccc; visibility: hidden; font-weight: bold;
+            border-radius: 50%; margin: 0 5px;
+        }
+
+        .acarreo-necesario { visibility: visible !important; background: var(--highlight); border-style: solid !important; border-color: orange !important; }
+        .acarreo-ok { background: var(--success) !important; color: white !important; border-color: var(--success) !important; visibility: visible !important; }
+
+        .linea-operacion { border-top: 4px solid #333; margin: 10px 0; position: relative; }
+
+        .simbolo-mas { position: absolute; left: -35px; top: -40px; font-size: 30px; font-weight: bold; }
+
+        .resultado-input { width: 45px; height: 50px; font-size: 28px; text-align: center; border: 2px solid #ddd; border-radius: 8px; font-weight: bold; background: white; }
+
+        .esperando-acarreo { border-color: orange; background: var(--highlight); }
+        .correcto { border-color: var(--success); background: #e8ffe8; color: var(--success); }
+        .incorrecto { border-color: var(--danger); background: #ffe8e8; color: var(--danger); }
+
+        .teclado { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: #e2e8f0; padding: 15px; border-radius: 15px; }
+
+        .btn-num { font-size: 26px; padding: 18px; background: white; border: none; border-radius: 12px; cursor: pointer; box-shadow: 0 4px 0 #cbd5e0; font-weight: bold; }
+
+        .btn-num:active { transform: translateY(3px); box-shadow: none; }
+
+        .btn-accion { padding: 12px; background: var(--primary); color: white; border: none; width: 100%; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 8px; }
+
+        .mensaje { margin: 10px 0; height: 35px; font-size: 18px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+   <h2 id="titulo">7Math</h2>
+   <p style="color: #28a745; font-weight: bold;">Sumas Mágicas 🌟</p>
+    <div id="instruccion-nivel"></div>
+
+    <div id="pantalla-inicio">
+        <button class="btn-accion" onclick="iniciarAuto(2, 1, 2)">2 dígitos (nivel 1)</button>
+        <button class="btn-accion" onclick="iniciarAuto(3, 2, 2)">3 dígitos (nivel 2)</button>
+        <button class="btn-accion" onclick="iniciarAuto(3, 3, 2)">3 dígitos (nivel 3)</button>
+        <button class="btn-accion" onclick="iniciarAuto(3, 4, 2)" style="background: #e67e22;">3 dígitos (nivel 4)</button>
+        <button class="btn-accion" onclick="iniciarAuto(4, 5, 3)" style="background: #c0392b;">4 dígitos / 3 cifras (nivel 5)</button>
+        <button class="btn-accion" style="background:#8e44ad;" onclick="mostrarModoManual()">Yo escribo los números</button>
+    </div>
+
+    <div id="pantalla-manual" style="display:none;">
+        <p>Escribe los números:</p>
+        <input type="text" id="manual-n1" class="input-manual" readonly placeholder="?" onclick="setFocus('manual-n1')">
+        <span style="font-size: 30px; font-weight: bold;">+</span>
+        <input type="text" id="manual-n2" class="input-manual" readonly placeholder="?" onclick="setFocus('manual-n2')">
+        <button class="btn-accion" style="background:var(--success);" onclick="validarManual()">¡Empezar!</button>
+        <button class="btn-accion" style="background:#ddd; color:black;" onclick="irAlMenu()">Regresar</button>
+    </div>
+
+    <div id="pantalla-juego" style="display:none;">
+        <div class="operacion-container">
+            <div id="fila-acarreos" class="fila acarreo-fila"></div>
+            <div id="cuerpo-operacion"></div>
+            <div class="linea-operacion"></div>
+            <div id="resultado-slots" class="fila"></div>
+        </div>
+        <div class="mensaje" id="mensaje"></div>
+    </div>
+
+    <div id="seccion-teclado" style="display:none;">
+        <div id="controles-juego-flujo" style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <button class="btn-accion" style="background:var(--success); margin: 0; flex: 1;" onclick="reiniciarMismaCifra()">Nueva operación</button>
+            <button class="btn-accion" style="background:var(--success); margin: 0; flex: 1;" id="btn-pp">PP tu amigo</button>
+        </div>
+        <div class="teclado">
+            <script>for(let i=1; i<=9; i++) document.write(`<button class="btn-num" onclick="teclaPresionada(${i})">${i}</button>`);</script>
+            <button class="btn-num" style="background:#ffcccc;" onclick="borrarDato()">←</button>
+            <button class="btn-num" onclick="teclaPresionada(0)">0</button>
+            <button class="btn-num" style="background:#ddd;" onclick="irAlMenu()">🏠</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let numeros = [], sumaStr, cifrasActuales, nivelActual, cantidadNumeros;
+    let columnaActual, modoActual = "", inputActivoManual = "manual-n1", esperandoAcarreo = false;
+
+    function irAlMenu() { location.reload(); }
+    
+    function mostrarModoManual() {
+        modoActual = "config"; cifrasActuales = -1; nivelActual = 1; cantidadNumeros = 2;
+        document.getElementById('instruccion-nivel').textContent = "Modo manual: Tú creas el reto";
+        document.getElementById('pantalla-inicio').style.display = 'none';
+        document.getElementById('pantalla-manual').style.display = 'block';
+        document.getElementById('seccion-teclado').style.display = 'block';
+        document.getElementById('controles-juego-flujo').style.display = 'none';
+        actualizarFocoVisual();
+    }
+    
+    function setFocus(id) { inputActivoManual = id; actualizarFocoVisual(); }
+    function actualizarFocoVisual() {
+        document.querySelectorAll('.input-manual').forEach(el => el.classList.remove('activo'));
+        document.getElementById(inputActivoManual).classList.add('activo');
+    }
+
+    function teclaPresionada(num) {
+        if (modoActual === "config") {
+            const input = document.getElementById(inputActivoManual);
+            if (input.value.length < 5) input.value += num;
+        } else if (modoActual === "juego") {
+            if (esperandoAcarreo) validarAcarreoManual(num);
+            else resolverPaso(num);
+        }
+    }
+
+    function borrarDato() { if (modoActual === "config") { document.getElementById(inputActivoManual).value = document.getElementById(inputActivoManual).value.slice(0, -1); } }
+    
+    function iniciarAuto(digitos, nivel, cantidad) {
+        cifrasActuales = digitos; nivelActual = nivel; cantidadNumeros = cantidad;
+        numeros = [];
+        const min = Math.pow(10, digitos - 1), max = Math.pow(10, digitos) - 1;
+        for(let i=0; i<cantidad; i++) numeros.push(Math.floor(Math.random()*(max-min+1))+min);
+        prepararJuego();
+    }
+    
+    function reiniciarMismaCifra() { if(cifrasActuales === -1) mostrarModoManual(); else iniciarAuto(cifrasActuales, nivelActual, cantidadNumeros); }
+    
+    function validarManual() {
+        const v1 = document.getElementById('manual-n1').value, v2 = document.getElementById('manual-n2').value;
+        if (!v1 || !v2) return alert("Escribe los números");
+        numeros = [parseInt(v1), parseInt(v2)];
+        prepararJuego();
+    }
+
+    function prepararJuego() {
+        let suma = numeros.reduce((a, b) => a + b, 0);
+        sumaStr = suma.toString(); modoActual = "juego";
+        
+        const sub = document.getElementById('instruccion-nivel');
+        if(nivelActual === 3) sub.textContent = "Coloca el número del acarreo";
+        else if(nivelActual >= 4) sub.textContent = "Memoriza el número del acarreo y súmalo";
+        else sub.textContent = "";
+
+        document.getElementById('pantalla-inicio').style.display = 'none';
+        document.getElementById('pantalla-manual').style.display = 'none';
+        document.getElementById('pantalla-juego').style.display = 'block';
+        document.getElementById('seccion-teclado').style.display = 'block';
+        document.getElementById('controles-juego-flujo').style.display = 'flex';
+        dibujarInterfaz();
+    }
+
+    function dibujarInterfaz() {
+        const cuerpo = document.getElementById('cuerpo-operacion');
+        const fA = document.getElementById('fila-acarreos');
+        const fR = document.getElementById('resultado-slots');
+        cuerpo.innerHTML = fA.innerHTML = fR.innerHTML = "";
+        
+        const largoRes = sumaStr.length;
+
+        // Dibujar filas de números
+        numeros.forEach((num, index) => {
+            let sPad = num.toString().padStart(largoRes, ' ');
+            let html = `<div class="fila">`;
+            if (index === numeros.length - 1) html += `<span class="simbolo-mas">+</span>`;
+            for (let char of sPad) html += `<div class="celda">${char === ' ' ? '' : char}</div>`;
+            html += `</div>`;
+            cuerpo.innerHTML += html;
+        });
+
+        // Dibujar acarreos y resultados
+        for (let i = 0; i < largoRes; i++) {
+            fA.innerHTML += `<div class="celda" id="acarreo-${i}" style="${nivelActual >= 4 ? 'border:none' : ''}">?</div>`;
+            fR.innerHTML += `<input class="resultado-input" id="res-${i}" disabled placeholder="?">`;
+        }
+        columnaActual = largoRes - 1;
+        checarSiRequiereAcarreo();
+    }
+
+    function checarSiRequiereAcarreo() {
+        if (columnaActual < 0) return;
+        
+        let sumaColumna = 0;
+        let revNums = numeros.map(n => n.toString().split('').reverse());
+        let acarreoEntrante = 0;
+
+        // Calcular acarreo que llega a la columna actual
+        for(let i=0; i < (sumaStr.length - 1 - columnaActual); i++) {
+            let sCol = revNums.reduce((acc, curr) => acc + parseInt(curr[i]||0), 0) + acarreoEntrante;
+            acarreoEntrante = Math.floor(sCol / 10);
+        }
+
+        if (nivelActual === 3 && acarreoEntrante > 0) {
+            esperandoAcarreo = true;
+            document.getElementById(`acarreo-${columnaActual}`).classList.add('acarreo-necesario');
+            document.getElementById(`res-${columnaActual}`).classList.add('esperando-acarreo');
+            actualizarMensaje(`¿Llevas ${acarreoEntrante}? 👆`, "orange");
+        } else if (nivelActual >= 4) {
+            esperandoAcarreo = false;
+            actualizarMensaje("¡Suma mentalmente! 🧠", "purple");
+        } else {
+            esperandoAcarreo = false;
+            if (acarreoEntrante > 0) {
+                const el = document.getElementById(`acarreo-${columnaActual}`);
+                el.textContent = acarreoEntrante; el.classList.add('acarreo-ok');
+            }
+            actualizarMensaje("¡Suma la columna! ➡️", "black");
+        }
+    }
+
+    function validarAcarreoManual(num) {
+        // Calcular qué acarreo debería ser
+        let revNums = numeros.map(n => n.toString().split('').reverse());
+        let acarreoEntrante = 0;
+        for(let i=0; i < (sumaStr.length - 1 - columnaActual); i++) {
+            let sCol = revNums.reduce((acc, curr) => acc + parseInt(curr[i]||0), 0) + acarreoEntrante;
+            acarreoEntrante = Math.floor(sCol / 10);
+        }
+
+        if (num === acarreoEntrante) {
+            esperandoAcarreo = false;
+            const el = document.getElementById(`acarreo-${columnaActual}`);
+            el.textContent = acarreoEntrante; el.className = "celda acarreo-ok";
+            document.getElementById(`res-${columnaActual}`).classList.remove('esperando-acarreo');
+            actualizarMensaje("¡Bien! Ahora el resultado.", "green");
+        } else actualizarMensaje("¡Incorrecto!", "red");
+    }
+
+    function resolverPaso(num) {
+        const input = document.getElementById(`res-${columnaActual}`);
+        if (num == sumaStr[columnaActual]) {
+            input.value = num; input.className = "resultado-input correcto";
+            columnaActual--;
+            if (columnaActual < 0) { lanzarConfeti(); actualizarMensaje("¡MAESTRÍA TOTAL!", "green"); }
+            else checarSiRequiereAcarreo();
+        } else {
+            input.value = num; input.className = "resultado-input incorrecto";
+            actualizarMensaje("Error. ¿Sumaste el acarreo?", "red");
+            setTimeout(() => { input.value = ""; input.className = "resultado-input"; }, 600);
+        }
+    }
+
+    function actualizarMensaje(t, col) { document.getElementById('mensaje').textContent = t; document.getElementById('mensaje').style.color = col; }
+
+    function lanzarConfeti() {
+        var duration = 2500, end = Date.now() + duration;
+        (function frame() {
+            confetti({ particleCount: 4, angle: 60, spread: 55, origin: { x: 0 } });
+            confetti({ particleCount: 4, angle: 120, spread: 55, origin: { x: 1 } });
+            if (Date.now() < end) requestAnimationFrame(frame);
+        }());
+    }
+</script>
+</body>
+</html>
