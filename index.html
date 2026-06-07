@@ -19,7 +19,7 @@
         .card { background: white; border-radius: 20px; padding: 25px; max-width: 450px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; }
 
         h2 { color: var(--primary); margin-bottom: 5px; }
-        #instruccion-nivel { font-size: 16px; color: #666; font-style: italic; margin-bottom: 15px; height: 20px; }
+        #instruccion-nivel { font-size: 16px; color: #666; font-style: italic; margin-bottom: 15px; height: 20px; font-weight: bold; }
 
         .input-manual { font-size: 24px; width: 100px; padding: 10px; text-align: center; border: 3px solid #ddd; border-radius: 12px; margin: 5px; background: #fff; cursor: pointer; }
 
@@ -59,6 +59,11 @@
         .btn-accion { padding: 12px; background: var(--primary); color: white; border: none; width: 100%; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 8px; }
 
         .mensaje { margin: 10px 0; height: 35px; font-size: 18px; font-weight: bold; }
+        
+        .bienvenida-box { background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 15px; padding: 15px; margin-bottom: 20px; text-align: left; }
+        .bienvenida-box h3 { margin-top: 0; color: var(--primary); font-size: 18px; text-align: center; }
+        .bienvenida-box p { font-size: 14px; color: #475569; line-height: 1.5; margin: 8px 0; }
+        .pizarra-pp { background: #1e293b; color: #38bdf8; padding: 12px; border-radius: 10px; font-family: monospace; font-size: 15px; margin-top: 10px; display: none; text-align: left; border-left: 5px solid #0284c7; }
     </style>
 </head>
 <body>
@@ -66,9 +71,22 @@
 <div class="card">
    <h2 id="titulo">7Math</h2>
    <p style="color: #28a745; font-weight: bold;">Sumas Mágicas 🌟</p>
+   
+    <div id="introduccion-bienvenida" class="bienvenida-box">
+        <h3>¡El método de siempre, ahora en tu pantalla! 🏠</h3>
+        <p>Esta aplicación no utiliza un método nuevo ni inventa reglas extrañas. Es exactamente el mismo sistema tradicional que te enseñaron tus maestros en la escuela primaria.</p>
+        <p style="font-weight: bold; color: #1e293b; border-left: 3px solid var(--success); padding-left: 8px;">
+            "Resuelve la operación de suma de derecha a izquierda como lo hacías en la primaria."
+        </p>
+        <button class="btn-accion" style="background: var(--success);" onclick="mostrarNiveles()">¡A jugar! ➡️</button>
+    </div>
+
     <div id="instruccion-nivel"></div>
     <div id="pp" style="margin-top:10px; font-style: italic; color:#1f6fe5;"></div>
-    <div id="pantalla-inicio">
+    
+    <div id="pizarra-ayuda-pp" class="pizarra-pp"></div>
+
+    <div id="pantalla-inicio" style="display:none;">
         <button class="btn-accion" onclick="iniciarAuto(2, 1, 2)">2 dígitos (nivel 1)</button>
         <button class="btn-accion" onclick="iniciarAuto(3, 2, 2)">3 dígitos (nivel 2)</button>
         <button class="btn-accion" onclick="iniciarAuto(3, 3, 2)">3 dígitos (nivel 3)</button>
@@ -99,7 +117,7 @@
     <div id="seccion-teclado" style="display:none;">
         <div id="controles-juego-flujo" style="display: flex; gap: 10px; margin-bottom: 10px;">
             <button class="btn-accion" style="background:var(--success); margin: 0; flex: 1;" onclick="reiniciarMismaCifra()">Nueva operación</button>
-            <button class="btn-accion" style="background:var(--success); margin: 0; flex: 1;" id="btn-pp">PP tu amigo</button>
+            <button class="btn-accion" style="background:#0284c7; margin: 0; flex: 1;" id="btn-pp" onclick="activarAyudaPP()">PP tu amigo 🧑‍🏫</button>
         </div>
         <div class="teclado">
             <script>for(let i=1; i<=9; i++) document.write(`<button class="btn-num" onclick="teclaPresionada(${i})">${i}</button>`);</script>
@@ -111,6 +129,9 @@
 </div>
 
 <script>
+    let numeros = [], sumaStr, cifrasActuales, nivelActual, cantidadNumeros;
+    let columnaActual, modoActual = "", inputActivoManual = "manual-n1", esperandoAcarreo = false;
+
     // =======================================================================
     // CIRCUITO DE SEGURIDAD OFUSCADO Y ENCRIPTADO (ANTI-PIRATERÍA)
     // =======================================================================
@@ -134,14 +155,13 @@
             throw new Error(_0x3d7b('0x4'));
         }
     }());
-    // =======================================================================
-    // TERMINA CIRCUITO DE SEGURIDAD OFUSCADO
-    // =======================================================================
-
-    let numeros = [], sumaStr, cifrasActuales, nivelActual, cantidadNumeros;
-    let columnaActual, modoActual = "", inputActivoManual = "manual-n1", esperandoAcarreo = false;
 
     function irAlMenu() { location.reload(); }
+    
+    function mostrarNiveles() {
+        document.getElementById('introduccion-bienvenida').style.display = 'none';
+        document.getElementById('pantalla-inicio').style.display = 'block';
+    }
     
     function mostrarModoManual() {
         modoActual = "config"; cifrasActuales = -1; nivelActual = 1; cantidadNumeros = 2;
@@ -192,11 +212,22 @@
         let suma = numeros.reduce((a, b) => a + b, 0);
         sumaStr = suma.toString(); modoActual = "juego";
         
+        // ASIGNACIÓN ESTÁTICA Y FIJA DE INSTRUCCIONES EN LA PARTE SUPERIOR
         const sub = document.getElementById('instruccion-nivel');
-        if(nivelActual === 3) sub.textContent = "Coloca el número del acarreo";
-        else if(nivelActual >= 4) sub.textContent = "Memoriza el número del acarreo y súmalo";
-        else sub.textContent = "";
+        if(nivelActual <= 2) {
+            sub.textContent = "Acarreo automático 🤖 (El sistema lo coloca)";
+            sub.style.color = "#0284c7";
+        } else if(nivelActual === 3) {
+            sub.textContent = "Coloca el número del acarreo";
+            sub.style.color = "orange";
+        } else if(nivelActual >= 4) {
+            sub.textContent = "Memoriza el número del acarreo y súmalo";
+            sub.style.color = "purple";
+        } else {
+            sub.textContent = "";
+        }
 
+        document.getElementById('introduccion-bienvenida').style.display = 'none';
         document.getElementById('pantalla-inicio').style.display = 'none';
         document.getElementById('pantalla-manual').style.display = 'none';
         document.getElementById('pantalla-juego').style.display = 'block';
@@ -210,6 +241,7 @@
         const fA = document.getElementById('fila-acarreos');
         const fR = document.getElementById('resultado-slots');
         cuerpo.innerHTML = fA.innerHTML = fR.innerHTML = "";
+        document.getElementById('pizarra-ayuda-pp').style.display = 'none';
         
         const largoRes = sumaStr.length;
 
@@ -232,8 +264,8 @@
 
     function checarSiRequiereAcarreo() {
         if (columnaActual < 0) return;
+        document.getElementById('pizarra-ayuda-pp').style.display = 'none';
         
-        let sumaColumna = 0;
         let revNums = numeros.map(n => n.toString().split('').reverse());
         let acarreoEntrante = 0;
 
@@ -242,21 +274,27 @@
             acarreoEntrante = Math.floor(sCol / 10);
         }
 
-        if (nivelActual === 3 && acarreoEntrante > 0) {
-            esperandoAcarreo = true;
-            document.getElementById(`acarreo-${columnaActual}`).classList.add('acarreo-necesario');
-            document.getElementById(`res-${columnaActual}`).classList.add('esperando-acarreo');
-            actualizarMensaje(`¿Llevas ${acarreoEntrante}? 👆`, "orange");
-        } else if (nivelActual >= 4) {
-            esperandoAcarreo = false;
-            actualizarMensaje("¡Suma mentalmente! 🧠", "purple");
-        } else {
+        if (nivelActual <= 2) {
             esperandoAcarreo = false;
             if (acarreoEntrante > 0) {
                 const el = document.getElementById(`acarreo-${columnaActual}`);
-                el.textContent = acarreoEntrante; el.classList.add('acarreo-ok');
+                el.textContent = acarreoEntrante; 
+                el.className = "celda acarreo-ok";
             }
             actualizarMensaje("¡Suma la columna! ➡️", "black");
+        } else if (nivelActual === 3) {
+            if (acarreoEntrante > 0) {
+                esperandoAcarreo = true;
+                document.getElementById(`acarreo-${columnaActual}`).classList.add('acarreo-necesario');
+                document.getElementById(`res-${columnaActual}`).classList.add('esperando-acarreo');
+                actualizarMensaje(`¿Llevas ${acarreoEntrante}? 👆`, "orange");
+            } else {
+                esperandoAcarreo = false;
+                actualizarMensaje("¡Suma la columna! ➡️", "black");
+            }
+        } else if (nivelActual >= 4) {
+            esperandoAcarreo = false;
+            actualizarMensaje("¡Suma mentalmente! 🧠", "purple");
         }
     }
 
@@ -274,7 +312,9 @@
             el.textContent = acarreoEntrante; el.className = "celda acarreo-ok";
             document.getElementById(`res-${columnaActual}`).classList.remove('esperando-acarreo');
             actualizarMensaje("¡Bien! Ahora el resultado.", "green");
-        } else actualizarMensaje("¡Incorrecto!", "red");
+        } else {
+            actualizarMensaje("¡Incorrecto!", "red");
+        }
     }
 
     function resolverPaso(num) {
@@ -284,16 +324,61 @@
         if (num == sumaStr[columnaActual]) {
             input.value = num; input.className = "resultado-input correcto";
             columnaActual--;
-            if (columnaActual < 0) { lanzarConfeti(); actualizarMensaje("¡MAESTRÍA TOTAL!", "green"); }
-            else checarSiRequiereAcarreo();
+            
+            if (columnaActual < 0) { 
+                lanzarConfeti(); 
+                actualizarMensaje("¡MAESTRÍA TOTAL!", "green"); 
+            } else { 
+                checarSiRequiereAcarreo(); 
+            }
         } else {
             input.value = num; input.className = "resultado-input incorrecto";
             actualizarMensaje("Error. ¿Sumaste el acarreo?", "red");
-            setTimeout(() => { input.value = ""; input.className = "resultado-input"; }, 600);
+            setTimeout(() => { 
+                input.value = ""; 
+                input.className = "resultado-input"; 
+                checarSiRequiereAcarreo();
+            }, 600);
         }
     }
 
-    function actualizarMensaje(t, col) { document.getElementById('mensaje').textContent = t; document.getElementById('mensaje').style.color = col; }
+    function actualizarMensaje(t, col) { 
+        document.getElementById('mensaje').textContent = t; 
+        document.getElementById('mensaje').style.color = col; 
+    }
+
+    function activarAyudaPP() {
+        if (columnaActual < 0) return;
+        
+        let revNums = numeros.map(n => n.toString().split('').reverse());
+        let acarreoEntrante = 0;
+        let posColumna = sumaStr.length - 1 - columnaActual;
+        
+        for(let i=0; i < posColumna; i++) {
+            let sCol = revNums.reduce((acc, curr) => acc + parseInt(curr[i]||0), 0) + acarreoEntrante;
+            acarreoEntrante = Math.floor(sCol / 10);
+        }
+        
+        let digitosActuales = numeros.map(n => {
+            let s = n.toString().split('').reverse();
+            return parseInt(s[posColumna] || 0);
+        });
+        
+        let sumaDigitos = digitosActuales.reduce((a, b) => a + b, 0);
+        let sumaTotalConAcarreo = sumaDigitos + acarreoEntrante;
+        
+        let pizarra = document.getElementById('pizarra-ayuda-pp');
+        pizarra.style.display = 'block';
+        
+        let explicacion = `<b>🧑‍🏫 Tip de PP tu amigo:</b><br>`;
+        explicacion += `En esta columna estás sumando: ${digitosActuales.join(' + ')}`;
+        if (acarreoEntrante > 0) {
+            explicacion += `<br>➕ ¡No olvides el <b>${acarreoEntrante}</b> que llevamos arriba!`;
+        }
+        explicacion += `<br>Suma total aquí = <b>${sumaTotalConAcarreo}</b>`;
+        
+        pizarra.innerHTML = explicacion;
+    }
 
     function lanzarConfeti() {
         var duration = 2500, end = Date.now() + duration;
